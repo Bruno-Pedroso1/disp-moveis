@@ -1,8 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { styles } from "./styles";
-import { Input } from "../../atoms/Input";
-import { Button } from "../../atoms/Button";
 
 export const LoginScreen = () => {
   const [email, setEmail] = useState("");

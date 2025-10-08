@@ -1,34 +1,30 @@
+import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
+  Alert,
   FlatList,
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  Alert,
-  Modal,
-  Image,
+  View,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 
-// Tipagem do produto
 interface Produto {
   id: string;
   nome: string;
   descricao: string;
   preco: number;
-  estoque: string;
+  estoque: number;
   imagem: string;
   fullDesc: string;
 }
 
-// Inicializa variável global se ainda não existe
 if (!global.produtos) {
   global.produtos = [] as Produto[];
 }
-
-
 
 export default function VendedorScreen() {
   const [produtos, setProdutos] = useState<Produto[]>(global.produtos);
@@ -45,7 +41,7 @@ export default function VendedorScreen() {
     setProdutoEditando(produto);
     setNome(produto.nome);
     setDescricao(produto.descricao);
-    setPreco(produto.preco);
+    setPreco(produto.preco > 0 ? (produto.preco * 100).toString() : ''); // centavos como string
     setEstoque(produto.estoque);
     setImagem(produto.imagem);
     setFull(produto.fullDesc);
@@ -63,28 +59,43 @@ export default function VendedorScreen() {
     }
   };
 
+  const handlePrecoChange = (valor: string) => {
+    if (!valor) {
+      setPreco("");
+      return;
+    }
+
+    const numeros = valor.replace(/\D/g, "");
+    const numeroCentavos = Number(numeros);
+    const valorFormatado = (numeroCentavos / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+    setPreco(valorFormatado);
+  };
+
   const adicionarProduto = () => {
     if (!nome || !descricao || !preco || !estoque || !imagem || !fullDesc) {
       Alert.alert("Erro", "Preencha todos os campos e selecione uma imagem");
       return;
     }
 
+    const precoNumero = Number(preco.replace(/\D/g, "")) / 100;
+
     let novosProdutos: Produto[] = [];
 
     if (produtoEditando) {
-      // Atualizar produto existente
       novosProdutos = produtos.map((p) =>
         p.id === produtoEditando.id
-          ? { ...p, nome, descricao, preco, estoque, imagem, fullDesc}
+          ? { ...p, nome, descricao, preco: precoNumero, estoque, imagem, fullDesc}
           : p
       );
     } else {
-      // Adicionar novo produto
       const novoProduto: Produto = {
         id: Date.now().toString(),
         nome,
         descricao,
-        preco,
+        preco: precoNumero,
         estoque,
         imagem,
         fullDesc,
@@ -98,7 +109,7 @@ export default function VendedorScreen() {
     setProdutoEditando(null);
     setNome("");
     setDescricao("");
-    setPreco("");
+    setPreco('');
     setEstoque("");
     setFull('');
     setImagem(null);
@@ -107,7 +118,7 @@ export default function VendedorScreen() {
   const removerProduto = (id: string) => {
     const novosProdutos = produtos.filter((p) => p.id !== id);
     setProdutos(novosProdutos);
-    global.produtos = novosProdutos; // salva no global
+    global.produtos = novosProdutos;
   };
 
   return (
@@ -123,10 +134,10 @@ export default function VendedorScreen() {
             <Image source={{ uri: item.imagem }} style={styles.cardImage} />
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>{item.nome}</Text>
-              <Text style={styles.cardInfo}>Valor: R${item.preco},00 </Text>
+              <Text style={styles.cardInfo}>Valor: {item.preco.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} </Text>
               <Text style={styles.cardDesc}>Resumo: {item.descricao}</Text>
               <Text style={styles.cardInfo}>Estoque: {item.estoque}</Text>
-              {<Text style={styles.cardInfo}>Descrição Completa: {'\n'}{item.fullDesc} </Text>}
+              <Text style={styles.cardInfo}>Descrição Completa: {'\n'}{item.fullDesc}</Text>
 
               <TouchableOpacity
                 style={[styles.button, { backgroundColor: "#2a7", marginTop: 5 }]}
@@ -191,23 +202,24 @@ export default function VendedorScreen() {
               placeholder="Preço"
               placeholderTextColor="#aaa"
               style={styles.input}
+              keyboardType="numeric"
               value={preco}
-              onChangeText={setPreco}
+              onChangeText={handlePrecoChange}
             />
             <TextInput
               placeholder="Estoque"
               placeholderTextColor="#aaa"
               style={styles.input}
               value={estoque}
+              keyboardType="numeric"
               onChangeText={setEstoque}
             />
-
             <TextInput
-            placeholder='Descrição Completa'
-            placeholderTextColor= '#aaa'
-            style= {styles.input}
-            value={fullDesc}
-            onChangeText={setFull}
+              placeholder='Descrição Completa'
+              placeholderTextColor= '#aaa'
+              style= {styles.input}
+              value={fullDesc}
+              onChangeText={setFull}
             />
 
             <View
@@ -231,6 +243,7 @@ export default function VendedorScreen() {
                   setModalVisible(false);
                   setProdutoEditando(null);
                   setImagem(null);
+                  setPreco('');
                 }}
               >
                 <Text style={styles.buttonText}>Cancelar</Text>

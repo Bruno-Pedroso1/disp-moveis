@@ -1,3 +1,16 @@
+import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
+import {
+  FlatList,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+
 interface Produto {
   id: string;
   nome: string;
@@ -11,53 +24,49 @@ interface Produto {
 if (!global.produtos) global.produtos = [] as Produto[];
 if (!global.carrinho) global.carrinho = [] as Produto[];
 
-import { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Image,
-  TouchableOpacity,
-  Modal,
-  ScrollView,
-} from 'react-native';
-
 export default function ClienteScreen() {
+  const [mensagem, setMensagem] = useState('');
+  const [mostrarMensagem, setMostrarMensagem] = useState(false);
+  const [mensagemCor, setMensagemCor] = useState<string[]>(["#0e4f2f", "#278d5cff", "#167c55ff"]);
   const [produtos] = useState<Produto[]>(global.produtos);
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null);
   const [carrinho, setCarrinho] = useState<Produto[]>(global.carrinho);
   const [modalCarrinho, setModalCarrinho] = useState(false);
 
-  // Adiciona produto ao carrinho
+  const mostrarToast = (texto: string, cores: string[]) => {
+    setMensagem(texto);
+    setMensagemCor(cores);
+    setMostrarMensagem(true);
+    setTimeout(() => setMostrarMensagem(false), 2000);
+  };
+
   const adicionarAoCarrinho = (produto: Produto) => {
     const novoCarrinho = [...carrinho, produto];
     setCarrinho(novoCarrinho);
     global.carrinho = novoCarrinho;
-    alert(`${produto.nome} foi adicionado ao carrinho!`);
+    mostrarToast(`${produto.nome} adicionado ao carrinho!`, ["#0e4f2f", "#278d5cff", "#167c55ff"]);
   };
 
-  // Remove produto do carrinho pelo índice
   const removerDoCarrinho = (index: number) => {
+    const produtoRemovido = carrinho[index];
     const novoCarrinho = [...carrinho];
     novoCarrinho.splice(index, 1);
     setCarrinho(novoCarrinho);
     global.carrinho = novoCarrinho;
+    mostrarToast(`${produtoRemovido.nome} removido do carrinho!`, ["#b33", "#ff4444", "#ff8888"]);
   };
 
-  // leembrar de testar direito
-const totalCarrinho: number = carrinho.reduce(
-  (sum, p) => sum + Number(p.preco),
-  0
-);
-
+  const totalCarrinho: number = carrinho.reduce(
+    (sum, p) => sum + Number(p.preco),
+    0
+  );
 
   return (
     <View style={styles.container}>
+
       <Text style={styles.title}>Bem-vindo, Cliente 👋</Text>
       <Text style={styles.subtitle}>Confira nossos produtos disponíveis:</Text>
 
-      {/* Botão abrir carrinho */}
       <TouchableOpacity
         style={[styles.button, { backgroundColor: '#fa0', marginBottom: 15 }]}
         onPress={() => setModalCarrinho(true)}
@@ -65,7 +74,6 @@ const totalCarrinho: number = carrinho.reduce(
         <Text style={styles.buttonText}>Ver Carrinho ({carrinho.length})</Text>
       </TouchableOpacity>
 
-      {/* Lista de produtos */}
       <FlatList
         data={produtos}
         keyExtractor={(item) => item.id}
@@ -95,7 +103,6 @@ const totalCarrinho: number = carrinho.reduce(
         }
       />
 
-      {/* Modal de detalhes */}
       <Modal
         visible={!!produtoSelecionado}
         animationType="slide"
@@ -138,7 +145,6 @@ const totalCarrinho: number = carrinho.reduce(
         </View>
       </Modal>
 
-      {/* Modal do carrinho */}
       <Modal
         visible={modalCarrinho}
         animationType="slide"
@@ -155,46 +161,45 @@ const totalCarrinho: number = carrinho.reduce(
                   Seu carrinho está vazio.
                 </Text>
               )}
-{carrinho.map((p, index) => {
-  const produtoExiste = global.produtos.some(prod => prod.id === p.id);
 
-  return (
-    <View key={index} style={styles.cardCarrinho}>
-      <Image source={{ uri: p.imagem }} style={styles.cardImageCarrinho} />
-      <View style={styles.cardContentCarrinho}>
-        <Text style={styles.cardTitle}>{p.nome}</Text>
-        <Text style={styles.cardPrice}>
-          R${Number(p.preco).toFixed(2).replace('.', ',')}
-        </Text>
-        <Text style={styles.cardDesc}>{p.descricao}</Text>
+              {carrinho.map((p, index) => {
+                const produtoExiste = global.produtos.some(prod => prod.id === p.id);
 
-        {produtoExiste ? (
-          <>
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: '#2a7', marginTop: 5 }]}
-              onPress={() => setProdutoSelecionado(p)}
-            >
-              <Text style={styles.buttonText}>Ver item</Text>
-            </TouchableOpacity>
+                return (
+                  <View key={index} style={styles.cardCarrinho}>
+                    <Image source={{ uri: p.imagem }} style={styles.cardImageCarrinho} />
+                    <View style={styles.cardContentCarrinho}>
+                      <Text style={styles.cardTitle}>{p.nome}</Text>
+                      <Text style={styles.cardPrice}>
+                        R${Number(p.preco).toFixed(2).replace('.', ',')}
+                      </Text>
+                      <Text style={styles.cardDesc}>{p.descricao}</Text>
 
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: '#b33', marginTop: 5 }]}
-              onPress={() => removerDoCarrinho(index)}
-            >
-              <Text style={styles.buttonText}>Remover</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <Text style={{ color: '#b33', marginTop: 10 }}>Produto indisponível</Text>
-        )}
-      </View>
-    </View>
-  );
-})}
+                      {produtoExiste ? (
+                        <>
+                          <TouchableOpacity
+                            style={[styles.button, { backgroundColor: '#2a7', marginTop: 5 }]}
+                            onPress={() => setProdutoSelecionado(p)}
+                          >
+                            <Text style={styles.buttonText}>Ver item</Text>
+                          </TouchableOpacity>
 
+                          <TouchableOpacity
+                            style={[styles.button, { backgroundColor: '#b33', marginTop: 5 }]}
+                            onPress={() => removerDoCarrinho(index)}
+                          >
+                            <Text style={styles.buttonText}>Remover</Text>
+                          </TouchableOpacity>
+                        </>
+                      ) : (
+                        <Text style={{ color: '#b33', marginTop: 10 }}>Produto indisponível</Text>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
             </ScrollView>
 
-            {/* Total */}
             <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 10 }}>
               Total: R${totalCarrinho.toFixed(2).replace('.', ',')}
             </Text>
@@ -208,146 +213,52 @@ const totalCarrinho: number = carrinho.reduce(
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={mostrarMensagem}
+        transparent
+        animationType="none"
+        pointerEvents="box-none"
+      >
+        <View style={styles.toastContainer}>
+          <LinearGradient
+            colors={mensagemCor}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.toast}
+          >
+            <Text style={styles.toastText}>{mensagem}</Text>
+          </LinearGradient>
+        </View>
+      </Modal>
+
     </View>
   );
 }
 
-// Estilos indentados corretamente
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-    padding: 20,
-  },
-
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10,
-  },
-
-  subtitle: {
-    fontSize: 16,
-    color: '#ccc',
-    marginBottom: 20,
-  },
-
-  card: {
-    flexDirection: 'row',
-    backgroundColor: '#f0f0f0',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-
-  cardImage: {
-    width: 150,
-    height: '100%',
-    borderRadius: 8,
-    marginRight: 10,
-  },
-
-  cardContent: {
-    flex: 1,
-  },
-
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-
-  cardPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#000',
-  },
-
-  cardDesc: {
-    fontSize: 14,
-    color: '#000',
-    marginVertical: 1,
-  },
-
-  button: {
-    backgroundColor: '#444',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-
-  buttonClose: {
-    backgroundColor: '#b33',
-    marginTop: 5,
-  },
-
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    padding: 20,
-  },
-
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    width: '100%',
-    maxHeight: '90%',
-    padding: 20,
-  },
-
-  modalImage: {
-    width: '100%',
-    height: 250,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#000',
-  },
-
-  modalPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#000',
-  },
-
-  modalDesc: {
-    fontSize: 14,
-    color: '#333',
-  },
-
-  cardCarrinho: {
-    flexDirection: 'row',
-    backgroundColor: '#f0f0f0',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-
-  cardImageCarrinho: {
-    width: 100,
-    height: '100%',
-    borderRadius: 8,
-    marginRight: 10,
-  },
-
-  cardContentCarrinho: {
-    flex: 1,
-    justifyContent: 'center',
-  },
+  container: { flex: 1, backgroundColor: '#000', padding: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginBottom: 10 },
+  subtitle: { fontSize: 16, color: '#ccc', marginBottom: 20 },
+  card: { flexDirection: 'row', backgroundColor: '#f0f0f0', padding: 15, borderRadius: 8, marginBottom: 15 },
+  cardImage: { width: 150, height: '100%', borderRadius: 8, marginRight: 10 },
+  cardContent: { flex: 1 },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#000' },
+  cardPrice: { fontSize: 16, fontWeight: 'bold', marginBottom: 5, color: '#000' },
+  cardDesc: { fontSize: 14, color: '#000', marginVertical: 1 },
+  button: { backgroundColor: '#444', padding: 10, borderRadius: 5, alignItems: 'center', marginTop: 10 },
+  buttonClose: { backgroundColor: '#b33', marginTop: 5 },
+  buttonText: { color: '#fff', fontWeight: 'bold' },
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.8)', padding: 20 },
+  modalContent: { backgroundColor: '#fff', borderRadius: 8, width: '100%', maxHeight: '90%', padding: 20 },
+  modalImage: { width: '100%', height: 250, borderRadius: 8, marginBottom: 15 },
+  modalTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 10, color: '#000' },
+  modalPrice: { fontSize: 16, fontWeight: 'bold', marginBottom: 5, color: '#000' },
+  modalDesc: { fontSize: 14, color: '#333' },
+  cardCarrinho: { flexDirection: 'row', backgroundColor: '#f0f0f0', padding: 15, borderRadius: 8, marginBottom: 15 },
+  cardImageCarrinho: { width: 100, height: '100%', borderRadius: 8, marginRight: 10 },
+  cardContentCarrinho: { flex: 1, justifyContent: 'center' },
+  toastContainer: { position: 'absolute', top: 40, left: 0, right: 0, alignItems: 'center', zIndex: 9999, elevation: 9999 },
+  toast: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 28, minWidth: 200, alignItems: 'center' },
+  toastText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
 });

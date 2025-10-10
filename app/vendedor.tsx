@@ -1,16 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
-import {
-  Alert,
-  FlatList,
-  Image,
-  Modal,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRef, useState } from "react";
+import { Alert, Animated, FlatList, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 interface Produto {
   id: string;
@@ -37,12 +28,37 @@ export default function VendedorScreen() {
   const [imagem, setImagem] = useState<string | null>(null);
   const [produtoEditando, setProdutoEditando] = useState<Produto | null>(null);
 
+  const [mensagem, setMensagem] = useState('');
+  const [mostrarMensagem, setMostrarMensagem] = useState(false);
+  const animToast = useRef(new Animated.Value(0)).current;
+    const [toastType, setToastType] = useState<'default' | 'edit' | 'remove'>('default');
+
+    const mostrarToast = (texto: string, tipo: 'default' | 'edit' | 'remove' = 'default') => {
+      setMensagem(texto);
+      setToastType(tipo);
+      setMostrarMensagem(true);
+
+      Animated.timing(animToast, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setTimeout(() => {
+          Animated.timing(animToast, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }).start(() => setMostrarMensagem(false));
+        }, tipo === 'remove' ? 3000 : 2000);
+      });
+    };
+
   const editarProduto = (produto: Produto) => {
     setProdutoEditando(produto);
     setNome(produto.nome);
     setDescricao(produto.descricao);
-    setPreco(produto.preco > 0 ? (produto.preco * 100).toString() : ''); // centavos como string
-    setEstoque(produto.estoque);
+    setPreco(produto.preco > 0 ? (produto.preco * 100).toString() : ''); 
+    setEstoque(produto.estoque.toString());
     setImagem(produto.imagem);
     setFull(produto.fullDesc);
     setModalVisible(true);
@@ -87,20 +103,22 @@ export default function VendedorScreen() {
     if (produtoEditando) {
       novosProdutos = produtos.map((p) =>
         p.id === produtoEditando.id
-          ? { ...p, nome, descricao, preco: precoNumero, estoque, imagem, fullDesc}
+          ? { ...p, nome, descricao, preco: precoNumero, estoque: Number(estoque), imagem, fullDesc }
           : p
       );
+      mostrarToast("Produto editado com sucesso!", "edit");
     } else {
       const novoProduto: Produto = {
         id: Date.now().toString(),
         nome,
         descricao,
         preco: precoNumero,
-        estoque,
+        estoque: Number(estoque),
         imagem,
         fullDesc,
       };
       novosProdutos = [novoProduto, ...produtos];
+      mostrarToast("Produto cadastrado com sucesso!", "default");
     }
 
     setProdutos(novosProdutos);
@@ -116,15 +134,53 @@ export default function VendedorScreen() {
   };
 
   const removerProduto = (id: string) => {
-    const novosProdutos = produtos.filter((p) => p.id !== id);
-    setProdutos(novosProdutos);
-    global.produtos = novosProdutos;
+  const novosProdutos = produtos.filter((p) => p.id !== id);
+  setProdutos(novosProdutos);
+  global.produtos = novosProdutos;
+  mostrarToast("Produto removido!", "remove");
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Bem-vindo, Vendedor 👋</Text>
       <Text style={styles.subtitle}>Gerencie seus produtos abaixo:</Text>
+
+{mostrarMensagem && (
+  <Animated.View
+    style={[styles.toast, {
+      opacity: animToast,
+      transform: [
+        {
+          translateY: animToast.interpolate({
+            inputRange: [0, 1],
+            outputRange: [-80, 0],
+          }),
+        },
+      ],
+    }]}
+  >
+    {toastType === 'remove' ? (
+      <LinearGradient
+        colors={["#b33", "#ff4444", "#ff8888"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.toastGradient}
+      >
+        <Text style={styles.toastText}>{mensagem}</Text>
+      </LinearGradient>
+    ) : (
+      <LinearGradient
+        colors={["#0e4f2f", "#278d5cff", "#167c55ff"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.toastGradient}
+      >
+        <Text style={styles.toastText}>{mensagem}</Text>
+      </LinearGradient>
+    )}
+  </Animated.View>
+)}
+
 
       <FlatList
         data={produtos}
@@ -134,13 +190,15 @@ export default function VendedorScreen() {
             <Image source={{ uri: item.imagem }} style={styles.cardImage} />
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>{item.nome}</Text>
-              <Text style={styles.cardInfo}>Valor: {item.preco.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} </Text>
+              <Text style={styles.cardInfo}>
+                Valor: {item.preco.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+              </Text>
               <Text style={styles.cardDesc}>Resumo: {item.descricao}</Text>
               <Text style={styles.cardInfo}>Estoque: {item.estoque}</Text>
               <Text style={styles.cardInfo}>Descrição Completa: {'\n'}{item.fullDesc}</Text>
 
               <TouchableOpacity
-                style={[styles.button, { backgroundColor: "#2a7", marginTop: 5 }]}
+                style={[styles.button, styles.buttonEdit]}
                 onPress={() => editarProduto(item)}
               >
                 <Text style={styles.buttonText}>Editar</Text>
@@ -215,20 +273,14 @@ export default function VendedorScreen() {
               onChangeText={setEstoque}
             />
             <TextInput
-              placeholder='Descrição Completa'
-              placeholderTextColor= '#aaa'
-              style= {styles.input}
+              placeholder="Descrição Completa"
+              placeholderTextColor="#aaa"
+              style={styles.input}
               value={fullDesc}
               onChangeText={setFull}
             />
 
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginTop: 10,
-              }}
-            >
+            <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.button, { flex: 1, marginRight: 5 }]}
                 onPress={adicionarProduto}
@@ -260,18 +312,70 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", padding: 20 },
   title: { fontSize: 24, fontWeight: "bold", color: "#fff", marginBottom: 10 },
   subtitle: { fontSize: 16, color: "#ccc", marginBottom: 20 },
-  card: { flexDirection: "row", backgroundColor: "#f0f0f0", padding: 15, borderRadius: 8, marginBottom: 15 },
-  cardImage: { width: 150, height: '100%', borderRadius: 8, marginBottom: 10, marginRight: 10 },
+
+  card: {
+    flexDirection: "row",
+    backgroundColor: "#f0f0f0",
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  cardImage: { width: 150, height: "100%", borderRadius: 8, marginBottom: 10, marginRight: 10 },
   cardContent: { flex: 1 },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#000" },
   cardDesc: { fontSize: 14, color: "#000", marginVertical: 5 },
   cardInfo: { fontSize: 14, color: "#000", marginVertical: 5 },
-  button: { backgroundColor: "#444", padding: 10, borderRadius: 5, alignItems: "center", marginTop: 10 },
+
+  button: {
+    backgroundColor: "#444",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  buttonEdit: { backgroundColor: "#2a7" },
   buttonDanger: { backgroundColor: "#b33" },
   buttonAdd: { backgroundColor: "#2a7", marginTop: 10 },
   buttonText: { color: "#fff", fontWeight: "bold" },
+
   modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#000000" },
   modalContent: { backgroundColor: "#111", padding: 20, borderRadius: 8, width: "90%" },
   modalTitle: { fontSize: 20, fontWeight: "bold", padding: 20, color: "#fff", marginBottom: 10 },
-  input: { borderWidth: 1, borderColor: "#444", padding: 10, borderRadius: 5, marginBottom: 10, color: "#fff" },
+  modalButtons: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
+  input: {
+    borderWidth: 1,
+    borderColor: "#444",
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+    color: "#fff",
+  },
+  toast: {
+    position: "absolute",
+    top: 50,
+    alignSelf: "center",
+    zIndex: 999,
+  },
+  toastGradient: {
+    borderRadius: 14,
+    paddingVertical: 20,
+    paddingHorizontal: 28,
+    shadowColor: "#222",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  toastText: {
+    color: "#e0e0e0",
+    fontWeight: "500",
+    fontSize: 15,
+    textAlign: "center",
+    textShadowColor: "#222",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    letterSpacing: 0.2,
+  },
 });

@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from "react";
-import { Alert, Animated, FlatList, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Animated, FlatList, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 interface Produto {
   id: string;
@@ -18,7 +18,8 @@ if (!global.produtos) {
 }
 
 export default function VendedorScreen() {
-  const [produtos, setProdutos] = useState<Produto[]>(global.produtos);
+  const [produtos, setProdutos] = useState<Produto[]>(global.produtos || []);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -31,9 +32,13 @@ export default function VendedorScreen() {
   const [mensagem, setMensagem] = useState('');
   const [mostrarMensagem, setMostrarMensagem] = useState(false);
   const animToast = useRef(new Animated.Value(0)).current;
-    const [toastType, setToastType] = useState<'default' | 'edit' | 'remove'>('default');
-
-    const mostrarToast = (texto: string, tipo: 'default' | 'edit' | 'remove' = 'default') => {
+  const [toastType, setToastType] = useState<'default' | 'edit' | 'remove'>('default');
+  const [modalPedidos, setModalPedidos] = useState(false);
+  const [enviados, setEnviados] = useState({});
+  const marcarComoEnviado = (index) => {
+    setEnviados(prev => ({ ...prev, [index]: true }));
+  };
+  const mostrarToast = (texto: string, tipo: 'default' | 'edit' | 'remove' = 'default') => {
       setMensagem(texto);
       setToastType(tipo);
       setMostrarMensagem(true);
@@ -144,6 +149,81 @@ export default function VendedorScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Bem-vindo, Vendedor 👋</Text>
       <Text style={styles.subtitle}>Gerencie seus produtos abaixo:</Text>
+<TouchableOpacity
+  style={[styles.button, { backgroundColor: '#2a7', marginTop: 0, marginBottom: 10 }]}
+  onPress={() => setModalPedidos(true)}
+>
+  <Text style={styles.buttonText}>Pedidos Finalizados</Text>
+</TouchableOpacity>
+
+    <Modal
+      visible={modalPedidos}
+      animationType="slide"
+      transparent
+      onRequestClose={() => setModalPedidos(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Pedidos finalizados</Text>
+
+          <ScrollView style={{ marginBottom: 10 }}>
+            {(!global.carrinhoFinalizado || global.carrinhoFinalizado.length === 0) && (
+              <Text style={{ color: '#fff', textAlign: 'center', marginTop: 20 }}>
+                Nenhum pedido finalizado ainda.
+              </Text>
+            )}
+
+{global.carrinhoFinalizado && global.carrinhoFinalizado.map((p, index) => (
+  <View
+    key={index}
+    style={[
+      styles.cardCarrinho,
+      enviados[index] && { backgroundColor: '#2a7' }
+    ]}
+  >
+    <Image source={{ uri: p.imagem }} style={styles.cardImageCarrinho} />
+    <View style={styles.cardContentCarrinho}>
+      <Text style={styles.cardTitle}>{p.nome}</Text>
+      <Text style={styles.cardPrice}>
+        Valor: R${Number(p.preco).toFixed(2).replace('.', ',')}
+      </Text>
+      <Text style={styles.cardDesc}>{p.descricao}</Text>
+      <Text style={{ fontSize: 12, color: '#333' }}>
+        Data da compra: {p.dataCompra}
+      </Text>
+      <Text style={{ fontSize: 12, color: '#333' }}>
+        Valor do item: R${Number(p.total || p.preco).toFixed(2).replace('.', ',')}
+      </Text>
+
+      {enviados[index] ? (
+        <Text style={[styles.buttonText, { color: '#fff', textAlign: 'center', marginTop: 8 }]}>
+          Em rota de entrega
+        </Text>
+      ) : (
+        <TouchableOpacity
+          style={[styles.button, { marginTop: 8, alignSelf: 'flex-start', width: '100%', backgroundColor: '#2a7' }]}
+          onPress={() => marcarComoEnviado(index)}
+        >
+          <Text style={styles.buttonText}>Marcar como enviado</Text>
+        </TouchableOpacity>
+      )}
+
+    </View>
+  </View>
+))}
+
+          </ScrollView>
+
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: '#b33', marginTop: 10 }]}
+            onPress={() => setModalPedidos(false)}
+          >
+            <Text style={styles.buttonText}>Fechar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+
 
 {mostrarMensagem && (
   <Animated.View
@@ -180,8 +260,6 @@ export default function VendedorScreen() {
     )}
   </Animated.View>
 )}
-
-
       <FlatList
         data={produtos}
         keyExtractor={(item) => item.id}
@@ -378,4 +456,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
     letterSpacing: 0.2,
   },
+cardCarrinho: { flexDirection: 'row', backgroundColor: '#f0f0f0', padding: 15, borderRadius: 8, marginBottom: 15 },
+  cardImageCarrinho: { width: 100, height: '100%', borderRadius: 8, marginRight: 10 },
+  cardContentCarrinho: { flex: 1, justifyContent: 'center' },
 });

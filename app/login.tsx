@@ -112,9 +112,9 @@ export default function LoginScreen() {
       return;
     }
 
-    if (email === "vendedor@uno.com") {
+    if (email === "v") {
       router.push("/vendedor");
-    } else if (email === "cliente@uno.com") {
+    } else if (email === "c") {
       router.push("/cliente");
     } else {
       Alert.alert("Erro", "Usuário não encontrado");

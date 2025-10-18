@@ -178,7 +178,7 @@ export default function VendedorScreen() {
     key={index}
     style={[
       styles.cardCarrinho,
-      enviados[index] && { backgroundColor: '#2a7' }
+      enviados[index] && { backgroundColor: '#d4d4d4' }
     ]}
   >
     <Image source={{ uri: p.imagem }} style={styles.cardImageCarrinho} />
@@ -196,7 +196,7 @@ export default function VendedorScreen() {
       </Text>
 
       {enviados[index] ? (
-        <Text style={[styles.buttonText, { color: '#fff', textAlign: 'center', marginTop: 8 }]}>
+        <Text style={[styles.buttonText, { color: '#000', textAlign: 'center', marginTop: 8 }]}>
           Em rota de entrega
         </Text>
       ) : (

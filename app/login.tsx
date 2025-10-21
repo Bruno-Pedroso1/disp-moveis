@@ -1,6 +1,16 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Alert, Button, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  Button,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { WebView } from "react-native-webview";
 
 const htmlBackground = `
@@ -8,7 +18,7 @@ const htmlBackground = `
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>testebd1 portaç </title>
+  <title>testebd1 portaç</title>
   <style>
     html, body {
       margin: 0;
@@ -104,6 +114,11 @@ const htmlBackground = `
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [cadastroEmail, setCadastroEmail] = useState("");
+  const [cadastroSenha, setCadastroSenha] = useState("");
+
   const router = useRouter();
 
   const handleLogin = () => {
@@ -131,6 +146,7 @@ export default function LoginScreen() {
 
       <View style={styles.loginBox}>
         <Text style={styles.title}>Login</Text>
+
         <TextInput
           placeholder="Email"
           placeholderTextColor="#aaa"
@@ -139,18 +155,80 @@ export default function LoginScreen() {
           onChangeText={setEmail}
           autoCapitalize="none"
         />
-        <TextInput
-          placeholder="Senha"
-          placeholderTextColor="#aaa"
-          secureTextEntry
-          style={styles.input}
-          value={senha}
-          onChangeText={setSenha}
-        />
+
+        <View style={styles.passwordContainer}>
+          <TextInput
+            placeholder="Senha"
+            placeholderTextColor="#aaa"
+            secureTextEntry={!mostrarSenha}
+            style={[styles.input, { flex: 1, marginBottom: 0 }]}
+            value={senha}
+            onChangeText={setSenha}
+          />
+          <TouchableOpacity
+            onPress={() => setMostrarSenha(!mostrarSenha)}
+            style={styles.eyeButton}
+          >
+            <Ionicons
+              name={mostrarSenha ? "eye-off" : "eye"}
+              size={22}
+              color="#1e90ff"
+            />
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.buttonWrapper}>
           <Button title="Entrar" color="#1e90ff" onPress={handleLogin} />
         </View>
+
+        <TouchableOpacity onPress={() => setModalVisible(true)}>
+          <Text style={styles.cadastroText}>
+            Não tem uma conta?{" "}
+            <Text style={{ color: "#1e90ff", textDecorationLine: "underline" }}>
+              Cadastre-se
+            </Text>
+          </Text>
+        </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Cadastro</Text>
+            <TextInput
+              placeholder="Email"
+              placeholderTextColor="#aaa"
+              style={styles.input}
+              value={cadastroEmail}
+              onChangeText={setCadastroEmail}
+              autoCapitalize="none"
+            />
+            <TextInput
+              placeholder="Senha"
+              placeholderTextColor="#aaa"
+              secureTextEntry
+              style={styles.input}
+              value={cadastroSenha}
+              onChangeText={setCadastroSenha}
+            />
+            <View style={styles.buttonWrapper}>
+              <Button
+                title="Cadastrar"
+                color="#1e90ff"
+                onPress={() => Alert.alert("Info", "cadastro??")}
+              />
+            </View>
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Text style={styles.fecharModal}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -191,8 +269,54 @@ const styles = StyleSheet.create({
     backgroundColor: "#111",
     color: "#fff",
   },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "90%",
+    marginBottom: 15,
+  },
+  eyeButton: {
+    position: "absolute",
+    right: 10,
+    padding: 8,
+  },
   buttonWrapper: {
     width: "90%",
     marginTop: 10,
+    marginBottom: 10,
+  },
+  cadastroText: {
+    color: "#ccc",
+    fontSize: 14,
+    marginTop: 10,
+    fontWeight: "700",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalBox: {
+    backgroundColor: "#111",
+    borderRadius: 15,
+    padding: 25,
+    width: 320,
+    alignItems: "center",
+    shadowColor: "#00ffff",
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1e90ff",
+    marginBottom: 20,
+  },
+  fecharModal: {
+    color: "#1e90ff",
+    marginTop: 15,
+    textDecorationLine: "underline",
   },
 });
